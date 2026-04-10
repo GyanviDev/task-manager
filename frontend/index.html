@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Task Manager</title>
+  <style>
+    /* ── Reset & Base ───────────────────────────────────── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 16px;
+    }
+
+    /* ── Card Container ─────────────────────────────────── */
+    .container {
+      background: white;
+      border-radius: 16px;
+      padding: 36px 32px;
+      width: 100%;
+      max-width: 580px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .header h1 {
+      font-size: 26px;
+      color: #1a1a2e;
+      font-weight: 700;
+    }
+
+    .header p {
+      color: #888;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    /* ── Stats Bar ──────────────────────────────────────── */
+    .stats {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .stat-box {
+      flex: 1;
+      background: #f8f7ff;
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat-box .num {
+      font-size: 22px;
+      font-weight: 700;
+      color: #4f46e5;
+    }
+
+    .stat-box .label {
+      font-size: 11px;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    /* ── Add Task Form ──────────────────────────────────── */
+    .form-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .form-row input {
+      flex: 1;
+      padding: 11px 14px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      color: #1a1a2e;
+    }
+
+    .form-row input:focus {
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+    }
+
+    .btn-primary {
+      padding: 11px 20px;
+      background: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+
+    .btn-primary:hover { background: #4338ca; }
+    .btn-primary:active { transform: scale(0.97); }
+
+    /* ── Error Message ──────────────────────────────────── */
+    .error-msg {
+      color: #dc2626;
+      font-size: 12px;
+      min-height: 18px;
+      margin-bottom: 16px;
+      padding-left: 4px;
+    }
+
+    /* ── Filter Tabs ────────────────────────────────────── */
+    .filters {
+      display: flex;
+      background: #f3f4f6;
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 20px;
+      gap: 4px;
+    }
+
+    .filters button {
+      flex: 1;
+      padding: 7px 0;
+      border: none;
+      border-radius: 7px;
+      background: transparent;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: #888;
+      transition: all 0.2s;
+    }
+
+    .filters button.active {
+      background: white;
+      color: #4f46e5;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      font-weight: 600;
+    }
+
+    /* ── Task List ──────────────────────────────────────── */
+    #task-list { list-style: none; }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 12px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      background: #fafafa;
+      border: 1.5px solid #f0f0f0;
+      transition: box-shadow 0.2s;
+    }
+
+    .task-item:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+
+    .task-item input[type="checkbox"] {
+      width: 17px;
+      height: 17px;
+      cursor: pointer;
+      accent-color: #4f46e5;
+      flex-shrink: 0;
+    }
+
+    /* ── Task Title (view + edit mode) ──────────────────── */
+    .task-title {
+      flex: 1;
+      font-size: 14px;
+      color: #2d2d2d;
+      word-break: break-word;
+      line-height: 1.4;
+    }
+
+    .task-title.done {
+      text-decoration: line-through;
+      color: #bbb;
+    }
+
+    /* Inline edit input */
+    .edit-input {
+      flex: 1;
+      padding: 5px 9px;
+      border: 1.5px solid #4f46e5;
+      border-radius: 7px;
+      font-size: 14px;
+      outline: none;
+      color: #1a1a2e;
+    }
+
+    .task-date {
+      font-size: 11px;
+      color: #ccc;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* ── Action Buttons ─────────────────────────────────── */
+    .task-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: background 0.15s;
+      line-height: 1;
+    }
+
+    .icon-btn:hover { background: #f0f0f0; }
+    .icon-btn.edit:hover { color: #4f46e5; }
+    .icon-btn.save { color: #16a34a; }
+    .icon-btn.cancel { color: #888; }
+    .icon-btn.delete:hover { color: #dc2626; }
+
+    /* ── Empty / Loading States ─────────────────────────── */
+    .state-msg {
+      text-align: center;
+      padding: 36px 0;
+      color: #bbb;
+      font-size: 14px;
+    }
+
+    .state-msg span { display: block; font-size: 36px; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>✅ Task Manager</h1>
+    <p>Stay organised, get things done.</p>
+  </div>
+
+  <!-- Stats Bar -->
+  <div class="stats">
+    <div class="stat-box">
+      <div class="num" id="stat-total">0</div>
+      <div class="label">Total</div>
+    </div>
+    <div class="stat-box">
+      <div class="num" id="stat-pending">0</div>
+      <div class="label">Pending</div>
+    </div>
+    <div class="stat-box">
+      <div class="num" id="stat-done">0</div>
+      <div class="label">Completed</div>
+    </div>
+  </div>
+
+  <!-- Add Task Form -->
+  <div class="form-row">
+    <input type="text" id="task-input" placeholder="What needs to be done?" />
+    <button class="btn-primary" onclick="addTask()">+ Add</button>
+  </div>
+  <div class="error-msg" id="error-msg"></div>
+
+  <!-- Filter Tabs -->
+  <div class="filters">
+    <button class="active" onclick="setFilter('all', this)">All</button>
+    <button onclick="setFilter('incomplete', this)">Pending</button>
+    <button onclick="setFilter('completed', this)">Completed</button>
+  </div>
+
+  <!-- Task List -->
+  <ul id="task-list"></ul>
+
+</div>
+
+<script>
+  const API = 'http://localhost:3000/tasks';
+  let allTasks = [];
+  let currentFilter = 'all';
+
+  // ── Helpers ──────────────────────────────────────────────
+
+  function showError(msg) {
+    document.getElementById('error-msg').textContent = msg;
+  }
+
+  function clearError() {
+    document.getElementById('error-msg').textContent = '';
+  }
+
+  function formatDate(iso) {
+    return new Date(iso).toLocaleDateString('en-IN', {
+      day: 'numeric', month: 'short'
+    });
+  }
+
+  // ── Stats ─────────────────────────────────────────────────
+  // Updates the 3 numbers at the top of the page
+
+  function updateStats() {
+    const total = allTasks.length;
+    const done  = allTasks.filter(t => t.completed).length;
+    document.getElementById('stat-total').textContent   = total;
+    document.getElementById('stat-pending').textContent = total - done;
+    document.getElementById('stat-done').textContent    = done;
+  }
+
+  // ── Filter ────────────────────────────────────────────────
+
+  function setFilter(filter, btn) {
+    currentFilter = filter;
+    document.querySelectorAll('.filters button')
+      .forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTasks();
+  }
+
+  // ── Render ────────────────────────────────────────────────
+  // Builds the task list from allTasks array
+
+  function renderTasks() {
+    const list = document.getElementById('task-list');
+    list.innerHTML = '';
+    updateStats();
+
+    // Apply filter
+    let filtered = allTasks;
+    if (currentFilter === 'completed')  filtered = allTasks.filter(t => t.completed);
+    if (currentFilter === 'incomplete') filtered = allTasks.filter(t => !t.completed);
+
+    // Empty state
+    if (filtered.length === 0) {
+      list.innerHTML = `
+        <div class="state-msg">
+          <span>📭</span>No tasks here. Add one above!
+        </div>`;
+      return;
+    }
+
+    // Render each task
+    filtered.forEach(task => {
+      const li = document.createElement('li');
+      li.className = 'task-item';
+      li.id = `task-${task.id}`;
+      li.innerHTML = `
+        <input type="checkbox" ${task.completed ? 'checked' : ''}
+               onchange="toggleTask(${task.id})" />
+        <span class="task-title ${task.completed ? 'done' : ''}"
+              id="title-${task.id}">${task.title}</span>
+        <span class="task-date">${formatDate(task.createdAt)}</span>
+        <div class="task-actions">
+          <button class="icon-btn edit" onclick="startEdit(${task.id})"
+                  title="Edit">✏️</button>
+          <button class="icon-btn delete" onclick="deleteTask(${task.id})"
+                  title="Delete">✕</button>
+        </div>
+      `;
+      list.appendChild(li);
+    });
+  }
+
+  // ── Inline Edit ───────────────────────────────────────────
+  // Replaces the task title text with an input box
+
+  function startEdit(id) {
+    const task = allTasks.find(t => t.id === id);
+    const titleEl = document.getElementById(`title-${id}`);
+    const actionsEl = titleEl.nextElementSibling.nextElementSibling;
+
+    // Replace title span with input
+    titleEl.outerHTML = `
+      <input class="edit-input" id="edit-input-${id}"
+             value="${task.title}" />
+    `;
+
+    // Replace action buttons with save/cancel
+    actionsEl.innerHTML = `
+      <button class="icon-btn save" onclick="saveEdit(${id})"
+              title="Save">✔</button>
+      <button class="icon-btn cancel" onclick="renderTasks()"
+              title="Cancel">✕</button>
+    `;
+
+    // Focus the input
+    const input = document.getElementById(`edit-input-${id}`);
+    input.focus();
+    input.select();
+
+    // Allow saving with Enter key
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter')  saveEdit(id);
+      if (e.key === 'Escape') renderTasks();
+    });
+  }
+
+  async function saveEdit(id) {
+    const input = document.getElementById(`edit-input-${id}`);
+    const newTitle = input.value.trim();
+
+    if (!newTitle) {
+      input.style.borderColor = '#dc2626';
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API}/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newTitle })
+      });
+
+      if (!res.ok) return;
+      const updated = await res.json();
+      allTasks = allTasks.map(t => t.id === id ? updated : t);
+      renderTasks();
+    } catch (err) {
+      showError('Could not update task.');
+    }
+  }
+
+  // ── API Calls ─────────────────────────────────────────────
+
+  // Load all tasks when page opens
+  async function loadTasks() {
+    const list = document.getElementById('task-list');
+    list.innerHTML = '<div class="state-msg"><span>⏳</span>Loading tasks...</div>';
+    try {
+      const res = await fetch(API);
+      if (!res.ok) throw new Error();
+      allTasks = await res.json();
+      renderTasks();
+    } catch {
+      list.innerHTML = '<div class="state-msg"><span>⚠️</span>Could not connect to server.</div>';
+    }
+  }
+
+  // Add a new task
+  async function addTask() {
+    clearError();
+    const input = document.getElementById('task-input');
+    const title = input.value.trim();
+
+    if (!title) {
+      showError('Please enter a task title.');
+      return;
+    }
+
+    try {
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title })
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        showError(data.error || 'Failed to add task.');
+        return;
+      }
+
+      const newTask = await res.json();
+      allTasks.push(newTask);
+      input.value = '';
+      renderTasks();
+    } catch {
+      showError('Could not connect to server.');
+    }
+  }
+
+  // Toggle completed / incomplete
+  async function toggleTask(id) {
+    try {
+      const res = await fetch(`${API}/${id}`, { method: 'PATCH' });
+      if (!res.ok) return;
+      const updated = await res.json();
+      allTasks = allTasks.map(t => t.id === id ? updated : t);
+      renderTasks();
+    } catch {
+      showError('Could not update task.');
+    }
+  }
+
+  // Delete a task
+  async function deleteTask(id) {
+    try {
+      const res = await fetch(`${API}/${id}`, { method: 'DELETE' });
+      if (!res.ok) return;
+      allTasks = allTasks.filter(t => t.id !== id);
+      renderTasks();
+    } catch {
+      showError('Could not delete task.');
+    }
+  }
+
+  // Allow pressing Enter to add task
+  document.getElementById('task-input')
+    .addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
+
+  // Load tasks on page open
+  loadTasks();
+</script>
+</body>
+</html>
