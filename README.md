@@ -29,16 +29,17 @@ A simple full-stack Task Manager application built with vanilla JavaScript on th
 ---
 
 ## Project Structure
-task-manager/
-├── backend/
-│   ├── routes/
-│   │   └── tasks.js      # All API route handlers
-│   ├── server.js         # Express app entry point
-│   ├── tasks.json        # Auto-generated persistent storage
-│   └── package.json
-├── frontend/
-│   └── index.html        # Complete frontend (HTML + CSS + JS)
-└── README.md
+
+    task-manager/
+    ├── backend/
+    │   ├── routes/
+    │   │   └── tasks.js      # All API route handlers
+    │   ├── server.js         # Express app entry point
+    │   ├── tasks.json        # Auto-generated persistent storage
+    │   └── package.json
+    ├── frontend/
+    │   └── index.html        # Complete frontend (HTML + CSS + JS)
+    └── README.md
 
 ---
 
